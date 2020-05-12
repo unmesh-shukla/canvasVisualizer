@@ -33,14 +33,9 @@
   }
 
   canvas {
-    /*display: block;*/
     height: 100%;
     width: 100%;
     background-color: transparent;
-    /*position: absolute;*/
-    /*top: 0;*/
-    /*left: 50%;*/
-    /*transform: translate(-50%, 0);*/
     min-width: 768px;
 
   }
@@ -164,7 +159,7 @@
     gui.addColor(config, 'curve_color').onChange(setValue);
     gui.add(config, 'curve_thickness', 1, 12).onChange(setValue);
     gui.add(config, 'fade', 1, 100).onChange(setValue);
-    gui.add(config, 'audio_source', ["source_1", "source_2"]).onChange(initializeNewSource);
+    gui.add(config, 'audio_source', ["source_1", "source_2", "source_3"]).onChange(initializeNewSource);
     gui.add(config, 'playback_speed', 0.25, 4).onChange(setValue);
   }
 
