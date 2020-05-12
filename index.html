@@ -101,6 +101,8 @@
   var curve = true;
   var curve_color = "rgb(255, 73, 0)";
   var curve_thickness = 9;
+  var curve_height_factor = 1;
+  var curve_height = 10 / curve_height_factor;
   var fade = 65;
 
 
@@ -140,6 +142,7 @@
     this.curve = curve;
     this.curve_color = curve_color;
     this.curve_thickness = curve_thickness;
+    this.curve_height = curve_height;
     this.fade = fade;
     this.audio_source = selected_source;
     this.playback_speed = playback_speed;
@@ -158,6 +161,7 @@
     gui.add(config, 'curve').onChange(setValue);
     gui.addColor(config, 'curve_color').onChange(setValue);
     gui.add(config, 'curve_thickness', 1, 12).onChange(setValue);
+    gui.add(config, 'curve_height', 1, 20).onChange(setValue);
     gui.add(config, 'fade', 1, 100).onChange(setValue);
     gui.add(config, 'audio_source', ["source_1", "source_2", "source_3", "source_4"]).onChange(initializeNewSource);
     gui.add(config, 'playback_speed', 0.25, 4).onChange(setValue);
@@ -173,6 +177,7 @@
     curve = config.curve;
     curve_color = config.curve_color;
     curve_thickness = config.curve_thickness;
+    curve_height_factor = 10 / config.curve_height;
     fade = config.fade;
     playback_speed = parseFloat(config.playback_speed);
   }
@@ -190,7 +195,6 @@
           aud.play();
           initialize();
     };
-
   }
 
   function initialize() {
@@ -284,10 +288,11 @@
             let rat = (DATA[i]) / bar_height_factor;
             let loc = rat * H;
 
-            CTX.lineTo((W / 2) - (LEN) / 2 + i + bar_width / 2, H - loc - 60);
+            var y = H - loc / curve_height_factor - 60;
+
+            CTX.lineTo((W / 2) - (LEN) / 2 + i + bar_width / 2, y);
             // CTX.lineTo((W / 2) - (LEN / 2) + i, H);
             // CTX.bezierCurveTo((W / 2) - (LEN) / 2 + i - bar_width / 2, H - loc - 10, (W / 2) - (LEN) / 2 + i + 1.5 * bar_width , H - loc - 10, (W / 2) - (LEN) / 2 + i + bar_width, H - loc - 10);
-
           }
           CTX.lineTo((W / 2) - (LEN/2) + i + bar_width / 2, H - 60);
           CTX.lineTo(W, H);
