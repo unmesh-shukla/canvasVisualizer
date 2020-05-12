@@ -125,11 +125,13 @@
     if (started || h1_style.display === "none") return;
     started = true;
     launchFullScreen(document.documentElement);
-    aud.play();
 
     document.body.querySelector('h1').remove();
     setupDatGui();
-    initialize();
+    aud.oncanplay = function() {
+          aud.play();
+          initialize();
+    };
   });
 
   var sampleConfig = function() {
