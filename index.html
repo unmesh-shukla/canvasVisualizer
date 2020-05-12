@@ -103,7 +103,10 @@
   var curve_height_factor = 1;
   var curve_height = 10 / curve_height_factor;
   var fade = 65;
+  var visualizer_cursor = false;
 
+  var mouseX = null;
+  var mouseY = null;
 
   function launchFullScreen(element) {
     if(element.requestFullScreen) {
@@ -114,6 +117,7 @@
       element.webkitRequestFullScreen();
     }
   }
+
 
   window.addEventListener('click', () => {
 
@@ -149,6 +153,7 @@
     this.fade = fade;
     this.audio_source = selected_source;
     this.playback_speed = playback_speed;
+    this.visualizer_cursor = visualizer_cursor;
   };
 
   function setupDatGui() {
@@ -168,6 +173,7 @@
     gui.add(config, 'fade', 1, 100).onChange(setValue);
     gui.add(config, 'audio_source', ["source_1", "source_2", "source_3", "source_4"]).onChange(initializeNewSource);
     gui.add(config, 'playback_speed', 0.25, 4).onChange(setValue);
+    gui.add(config, 'visualizer_cursor').onChange(setValue);
   }
 
   function setValue() {
@@ -183,6 +189,15 @@
     curve_height_factor = 10 / config.curve_height;
     fade = config.fade;
     playback_speed = parseFloat(config.playback_speed);
+    visualizer_cursor = config.visualizer_cursor;
+    if (visualizer_cursor) {
+      if (CVS != null) {
+        CVS.style.cursor = "none";
+      }
+    }
+    else {
+        CVS.style.cursor = "default";
+    }
   }
 
   function initializeNewSource() {
@@ -207,7 +222,25 @@
     const CTX = CVS.getContext('2d');
     const W = CVS.width = 1366;
     const H = CVS.height = 768;
-    // CTX.fillStyle = "rgb(0, 0, 0)";
+
+
+    window.addEventListener('mousemove', (e) => {
+      var rect = CVS.getBoundingClientRect(), // abs. size of element
+      scaleX = CVS.width / rect.width,    // relationship bitmap vs. element for X
+      scaleY = CVS.height / rect.height;  // relationship bitmap vs. element for Y
+      mouseX = (e.clientX - rect.left) * scaleX;
+      mouseY = (e.clientY - rect.top) * scaleY;
+    });
+    window.addEventListener('touchmove', (e) => {
+      var touch = e.touches[0] || e.changedTouches[0];
+
+      var rect = CVS.getBoundingClientRect(), // abs. size of element
+      scaleX = CVS.width / rect.width,    // relationship bitmap vs. element for X
+      scaleY = CVS.height / rect.height;  // relationship bitmap vs. element for Y
+      mouseX = (touch.clientX - rect.left) * scaleX;
+      mouseY = (touch.clientY - rect.top) * scaleY;
+    });
+
     CTX.clearRect(0, 0, W, H);
 
     const ACTX = new AudioContext();
@@ -239,8 +272,7 @@
         ANALYSER.getByteFrequencyData(DATA);
 
         CTX.fillStyle = "rgba(0, 0, 0, " + fade / 100 + ")";
-        CTX.fillRect(0, 0, W, H);
-        
+        CTX.fillRect(0, 0, W, H);        
 
         for (let i = 0; i < LEN; i += bar_width) {
           // Uncomment to see full bar length
@@ -252,7 +284,6 @@
           let lit = 10 + (90 * rat) + '%';
           CTX.fillStyle = `hsla(${hue}, ${sat}, ${lit}, 0.5)`;
           let loc = rat * H;
-
 
           CTX.beginPath();
           if (circles_scale){
@@ -267,17 +298,19 @@
             CTX.rect(((W / 2) - (LEN) / 2 + i + bar_width / 4), H - loc, (bar_width / 2), H);
             CTX.fill();
           }
-          
+
           // Uncomment to see bar's x coordinates
           // CTX.font = "20px Georgia";
           // CTX.fillStyle = "white";
           // CTX.fillText(i + "", (W / 2) - (LEN) / 2 + i - 2 + bar_width / 4, 300 - 20);
           // CTX.fill();
-
         }
+
         CTX.closePath();
 
+
         if (curve) {
+
           CTX.beginPath();
           CTX.strokeStyle = curve_color;
           CTX.moveTo(0, H);
@@ -301,6 +334,23 @@
           CTX.lineTo(W, H);
           CTX.stroke();
           CTX.closePath();
+        }
+
+        if (visualizer_cursor) {
+          for (let i = 0; i < LEN; i += 2 * bar_width) {
+            let rat = (DATA[i]) / bar_height_factor;
+            let hue = Math.round(((rat) * 120) + color_hue % 360);
+            let sat = '100%';
+            let lit = 10 + (90 * rat) + '%';
+            CTX.fillStyle = `hsla(${hue}, ${sat}, ${lit}, 0.5)`;
+            let loc = rat * H;
+
+            CTX.beginPath();
+            CTX.lineWidth = 20;
+            CTX.arc(mouseX, mouseY, 2 + loc / 7, 0, 2 * Math.PI);
+            CTX.fill();
+            CTX.closePath();
+          }
         }
       }
     }
