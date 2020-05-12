@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=no">
+  <title>Audio Visualizer</title>
+  <style type="text/css">
+  /* latin */
+  * {
+    -webkit-user-select: none;
+    user-select: none;
+    -moz-user-select: none;
+  }
+  @font-face {
+    font-family: 'Caveat';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: local('Caveat Bold'), local('Caveat-Bold'), url(https://fonts.gstatic.com/s/caveat/v7/Wnz5HAc5bAfYB2Qz3RMNpS7RFgihjQ.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  html,
+  body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: rgb(0, 0, 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  canvas {
+    /*display: block;*/
+    height: 100%;
+    width: 100%;
+    background-color: transparent;
+    /*position: absolute;*/
+    /*top: 0;*/
+    /*left: 50%;*/
+    /*transform: translate(-50%, 0);*/
+    min-width: 768px;
+
+  }
+
+  #welcome-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    margin: 0;
+    text-align: center;
+    color: white;
+    font-family: 'Caveat';
+  }
+
+  #warning-message {
+    display: none;
+    color: white;
+    font-family: 'Caveat';
+    font-size: 5vh;
+    text-align: center;
+  }
+  @media only screen and (orientation:portrait){
+    canvas, #welcome-message { display:none; }
+    #warning-message { display:block; }
+  }
+  @media only screen and (orientation:landscape){
+    #warning-message { display:none; }
+  }
+
+  </style>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+</head>
+
+<body>
+  <div id="warning-message">Visualizer is only viewable in Landscape Mode!</div>
+  <h1 id="welcome-message">Click to Visualize</h1>
+  <canvas></canvas>
+  <script type="text/javascript">
+
+  var config;
+
+  var started = null;
+
+  var selected_source = "source_2";
+  var playback_speed = 1;
+  var aud = new Audio("./audio/" + selected_source + ".mp3");
+  aud.playbackRate = playback_speed;
+
+  var CVS;
+  var anim_loop = null;
+
+  var h1;
+  var h1_style;
+
+  var bar_factor = 16;
+  var bar_excitement = 10;
+  var bar_height_factor = 255 + (50000 / (50 * bar_excitement));
+  var color_hue = 280;
+  var bars = true;
+  var circles_scale = true;
+  var rectangles_scale = true;
+  var curve = true;
+  var curve_color = "rgb(255, 73, 0)";
+  var curve_thickness = 7;
+  var fade = 60;
+
+
+  function launchFullScreen(element) {
+    if(element.requestFullScreen) {
+      element.requestFullScreen();
+    } else if(element.mozRequestFullScreen) {
+      element.mozRequestFullScreen();
+    } else if(element.webkitRequestFullScreen) {
+      element.webkitRequestFullScreen();
+    }
+  }
+
+  window.addEventListener('click', () => {
+
+    if (!started) {
+      h1 = document.getElementById('welcome-message');
+      h1_style = window.getComputedStyle(h1);
+    }
+    if (started || h1_style.display === "none") return;
+    started = true;
+    launchFullScreen(document.documentElement);
+    aud.play();
+
+    document.body.querySelector('h1').remove();
+    setupDatGui();
+    initialize();
+  });
+
+  var sampleConfig = function() {
+    this.bar_width = 84;
+    this.bar_excitement = bar_excitement;
+    this.color_hue = 280;
+    this.bars = true;
+    this.circle_scale = true;
+    this.rectangle_scale = true;
+    this.curve = curve;
+    this.curve_color = curve_color;
+    this.curve_thickness = curve_thickness;
+    this.fade = fade;
+    this.audio_source = selected_source;
+    this.playback_speed = playback_speed;
+  };
+
+  function setupDatGui() {
+    var gui = new dat.GUI();
+    gui.close();
+    config = new sampleConfig();
+    gui.add(config, 'bar_width', 1, 84).onChange(setValue);
+    gui.add(config, 'bar_excitement', 1, 60).onChange(setValue);
+    gui.add(config, 'color_hue', 1, 360).onChange(setValue);
+    gui.add(config, 'bars').onChange(setValue);
+    gui.add(config, 'circle_scale').onChange(setValue);
+    gui.add(config, 'rectangle_scale').onChange(setValue);
+    gui.add(config, 'curve').onChange(setValue);
+    gui.addColor(config, 'curve_color').onChange(setValue);
+    gui.add(config, 'curve_thickness', 1, 12).onChange(setValue);
+    gui.add(config, 'fade', 1, 100).onChange(setValue);
+    gui.add(config, 'audio_source', ["source_1", "source_2"]).onChange(initializeNewSource);
+    gui.add(config, 'playback_speed', 0.25, 4).onChange(setValue);
+  }
+
+  function setValue() {
+    bar_factor = (100 - config.bar_width);
+    bar_height_factor = 255 + (50000 / (50 * config.bar_excitement));
+    color_hue = config.color_hue;
+    bars = config.bars;
+    circles_scale = config.circle_scale;
+    rectangles_scale = config.rectangle_scale;
+    curve = config.curve;
+    curve_color = config.curve_color;
+    curve_thickness = config.curve_thickness;
+    fade = config.fade;
+    playback_speed = parseFloat(config.playback_speed);
+  }
+
+  function initializeNewSource() {
+    cancelAnimationFrame(anim_loop);
+    selected_source = config.audio_source;
+    aud.pause();
+    aud.currentTime = 0;
+    aud = new Audio("./audio/" + selected_source + ".mp3");
+    CVS.remove();
+    var canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+    aud.oncanplay = function() {
+          aud.play();
+          initialize();
+    };
+
+  }
+
+  function initialize() {
+
+    h1.remove();
+    CVS = document.body.querySelector('canvas');
+    const CTX = CVS.getContext('2d');
+    const W = CVS.width = 1366;
+    const H = CVS.height = 768;
+    // CTX.fillStyle = "rgb(0, 0, 0)";
+    CTX.clearRect(0, 0, W, H);
+
+    const ACTX = new AudioContext();
+    const ANALYSER = ACTX.createAnalyser();
+
+    ANALYSER.fftSize = 2048;
+
+    process(aud.captureStream());
+
+    function process(stream) {
+      const SOURCE = ACTX.createMediaStreamSource(stream);
+      SOURCE.connect(ANALYSER);
+      const DATA = new Uint8Array(ANALYSER.frequencyBinCount);
+      const LEN = DATA.length;
+      const h = H / LEN;
+      const x = W - 1;
+
+      loop();
+
+      function loop() {
+        loop_anim = requestAnimationFrame(loop);
+
+        aud.playbackRate = playback_speed;
+
+        bar_width = parseInt(W / (3 * bar_factor));
+
+        let imgData = CTX.getImageData(0, 0, W - 1, H);
+        CTX.putImageData(imgData, 0, 0);
+        ANALYSER.getByteFrequencyData(DATA);
+
+        CTX.fillStyle = "rgba(0, 0, 0, " + fade / 100 + ")";
+        CTX.fillRect(0, 0, W, H);
+        
+
+        for (let i = 0; i < LEN; i += bar_width) {
+          // Uncomment to see full bar length
+          // DATA[i] = 255;
+
+          let rat = (DATA[i]) / bar_height_factor;
+          let hue = Math.round(((rat) * 120) + color_hue % 360);
+          let sat = '100%';
+          let lit = 10 + (90 * rat) + '%';
+          CTX.fillStyle = `hsla(${hue}, ${sat}, ${lit}, 0.5)`;
+          let loc = rat * H;
+
+
+          CTX.beginPath();
+          if (circles_scale){
+            CTX.arc(((W / 2) - (LEN) / 2 + i + bar_width / 2), (20 + 10 + (bar_width / 2)), bar_width / 2, 0, 2 * Math.PI);
+            CTX.fill();
+          }
+          if (rectangles_scale) {
+            CTX.rect(((W / 2) - (LEN) / 2 + i), 10, bar_width, 10);
+            CTX.fill();
+          }
+          if (bars) {
+            CTX.rect(((W / 2) - (LEN) / 2 + i + bar_width / 4), H - loc, (bar_width / 2), H);
+            CTX.fill();
+          }
+          
+          // Uncomment to see bar's x coordinates
+          // CTX.font = "20px Georgia";
+          // CTX.fillStyle = "white";
+          // CTX.fillText(i + "", (W / 2) - (LEN) / 2 + i - 2 + bar_width / 4, 300 - 20);
+          // CTX.fill();
+
+        }
+        CTX.closePath();
+
+        if (curve) {
+          CTX.beginPath();
+          CTX.strokeStyle = curve_color;
+          CTX.moveTo(0, H);
+          CTX.lineTo((W / 2) - (LEN / 2), H  - 60);
+          CTX.lineWidth = curve_thickness;
+          CTX.lineCap = "round";
+          CTX.lineJoin = "round";
+
+          for (i = 0; i <= LEN; i += bar_width) {
+
+            let rat = (DATA[i]) / bar_height_factor;
+            let loc = rat * H;
+
+            CTX.lineTo((W / 2) - (LEN) / 2 + i + bar_width / 2, H - loc - 60);
+            // CTX.lineTo((W / 2) - (LEN / 2) + i, H);
+            // CTX.bezierCurveTo((W / 2) - (LEN) / 2 + i - bar_width / 2, H - loc - 10, (W / 2) - (LEN) / 2 + i + 1.5 * bar_width , H - loc - 10, (W / 2) - (LEN) / 2 + i + bar_width, H - loc - 10);
+
+          }
+          CTX.lineTo((W / 2) - (LEN/2) + i + bar_width / 2, H - 60);
+          CTX.lineTo(W, H);
+          CTX.stroke();
+          CTX.closePath();
+        }
+      }
+    }
+  }
+  </script>
+</body>
+
+</html>
