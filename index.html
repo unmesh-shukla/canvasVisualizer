@@ -80,10 +80,9 @@
 
   var started = null;
 
+  var aud;
   var selected_source = "source_2";
   var playback_speed = 1;
-  var aud = new Audio("./audio/" + selected_source + ".mp3");
-  aud.playbackRate = playback_speed;
 
   var CVS;
   var anim_loop = null;
@@ -124,6 +123,8 @@
     }
     if (started || h1_style.display === "none") return;
     started = true;
+    aud = new Audio("./audio/" + selected_source + ".mp3");
+    aud.playbackRate = playback_speed;
     launchFullScreen(document.documentElement);
 
     document.body.querySelector('h1').remove();
