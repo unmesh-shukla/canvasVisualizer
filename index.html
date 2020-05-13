@@ -258,7 +258,7 @@
 
     ANALYSER.fftSize = 2048;
 
-    process(aud.capturedStream());
+    process(aud.captureStream());
 
     function process(stream) {
       const SOURCE = ACTX.createMediaStreamSource(stream);
