@@ -94,6 +94,7 @@
   var bar_excitement = 7;
   var bar_height_factor = 255 + (50000 / (50 * bar_excitement));
   var color_hue = 280;
+  var auto_color_change = false;
   var bars = true;
   var circles_scale = true;
   var rectangles_scale = true;
@@ -104,6 +105,7 @@
   var curve_height = 10 / curve_height_factor;
   var fade = 65;
   var visualizer_cursor = false;
+  var bg_visualizer = false;
 
   var mouseX = null;
   var mouseY = null;
@@ -142,7 +144,8 @@
   var sampleConfig = function() {
     this.bar_width = 84;
     this.bar_excitement = bar_excitement;
-    this.color_hue = 280;
+    this.color_hue = color_hue;
+    this.auto_color_change = auto_color_change;
     this.bars = true;
     this.circle_scale = true;
     this.rectangle_scale = true;
@@ -154,6 +157,7 @@
     this.audio_source = selected_source;
     this.playback_speed = playback_speed;
     this.visualizer_cursor = visualizer_cursor;
+    this.bg_visualizer = bg_visualizer;
   };
 
   function setupDatGui() {
@@ -162,7 +166,8 @@
     config = new sampleConfig();
     gui.add(config, 'bar_width', 1, 84).onChange(setValue);
     gui.add(config, 'bar_excitement', 1, 60).onChange(setValue);
-    gui.add(config, 'color_hue', 1, 360).onChange(setValue);
+    gui.add(config, 'color_hue', 1, 360).onChange(setValue).listen();
+    gui.add(config, 'auto_color_change').onChange(setValue);
     gui.add(config, 'bars').onChange(setValue);
     gui.add(config, 'circle_scale').onChange(setValue);
     gui.add(config, 'rectangle_scale').onChange(setValue);
@@ -174,12 +179,14 @@
     gui.add(config, 'audio_source', ["source_1", "source_2", "source_3", "source_4"]).onChange(initializeNewSource);
     gui.add(config, 'playback_speed', 0.25, 4).onChange(setValue);
     gui.add(config, 'visualizer_cursor').onChange(setValue);
+    gui.add(config, 'bg_visualizer').onChange(setValue);
   }
 
   function setValue() {
     bar_factor = (100 - config.bar_width);
     bar_height_factor = 255 + (50000 / (50 * config.bar_excitement));
     color_hue = config.color_hue;
+    auto_color_change = config.auto_color_change;
     bars = config.bars;
     circles_scale = config.circle_scale;
     rectangles_scale = config.rectangle_scale;
@@ -198,6 +205,7 @@
     else {
         CVS.style.cursor = "default";
     }
+    bg_visualizer = config.bg_visualizer;
   }
 
   function initializeNewSource() {
@@ -258,9 +266,17 @@
       const h = H / LEN;
       const x = W - 1;
 
+
       loop();
 
       function loop() {
+        if (auto_color_change) {
+          color_hue += 0.02;
+          if (parseInt(color_hue) === 360) {
+            color_hue = 0;
+          }
+          config.color_hue = color_hue;          
+        }
         loop_anim = requestAnimationFrame(loop);
 
         aud.playbackRate = playback_speed;
@@ -273,6 +289,24 @@
 
         CTX.fillStyle = "rgba(0, 0, 0, " + fade / 100 + ")";
         CTX.fillRect(0, 0, W, H);        
+
+        if (bg_visualizer) {
+          var bg_visual_excitement = 255 + (50000 / (50 * 7));
+          var bg_visual_num = 84;
+          for (let i = LEN; i > 0; i -= bg_visual_num) {
+              let rat = (DATA[i]) / bg_visual_excitement;
+              let hue = Math.round(((rat) * 60) + color_hue % 360);
+              let sat = '100%';
+              let lit = 20 + (80 * rat) + '%';
+              CTX.fillStyle = `hsla(${hue}, ${sat}, ${lit}, 0.2)`;
+              let loc = rat * H;
+
+              CTX.beginPath();
+              CTX.arc(W / 2, H / 2, (H / 4) - (rat * H / 4), 0, 2 * Math.PI);
+              CTX.fill();
+              CTX.closePath();
+            }
+        }
 
         for (let i = 0; i < LEN; i += bar_width) {
           // Uncomment to see full bar length
