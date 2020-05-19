@@ -81,8 +81,8 @@
     setupDatGui();
     loader.style.visibility = "visible";
     aud.oncanplaythrough = function() {
-          aud.play();
-          initialize();
+      aud.play();
+      initialize();
     };
   });
 
@@ -118,7 +118,9 @@
     gui.add(config, 'bars').onChange(setValue);
     gui.add(config, 'circle_scale').onChange(setValue);
     gui.add(config, 'rectangle_scale').onChange(setValue);
+    gui.add(config, 'bezier').onChange(setValue);
     gui.add(config, 'curve').onChange(setValue);
+    gui.addColor(config, 'bezier_color').onChange(setValue);
     gui.addColor(config, 'curve_color').onChange(setValue);
     gui.add(config, 'curve_thickness', 1, 12).onChange(setValue);
     gui.add(config, 'curve_height', 1, 20).onChange(setValue);
@@ -127,8 +129,6 @@
     gui.add(config, 'playback_speed', 0.25, 4).onChange(setValue);
     gui.add(config, 'visualizer_cursor').onChange(setValue);
     gui.add(config, 'bg_visualizer').onChange(setValue);
-    gui.add(config, 'bezier').onChange(setValue);
-    gui.addColor(config, 'bezier_color').onChange(setValue);
   }
 
   function setValue() {
@@ -170,13 +170,13 @@
     document.body.appendChild(canvas);
     loader.style.visibility = "visible";
     aud.oncanplaythrough = function() {
-          aud.play();
-          initialize();
+      aud.play();
+      initialize();
     };
   }
 
   function initialize() {
-    loader.style.visibility = "hidden";
+
     h1.remove();
     CVS = document.body.querySelector('canvas');
     var CTX = CVS.getContext('2d');
@@ -213,15 +213,28 @@
     process(aud.captureStream());
 
     function process(stream) {
-      const SOURCE = ACTX.createMediaStreamSource(stream);
-      SOURCE.connect(ANALYSER);
-      const DATA = new Uint8Array(ANALYSER.frequencyBinCount);
-      const LEN = DATA.length;
-      const h = H / LEN;
-      const x = W - 1;
 
+      var SOURCE;
+      var DATA;
+      var LEN;
+      var h;
+      var x;
 
-      loop();
+      try {
+        SOURCE = ACTX.createMediaStreamSource(stream);
+        loader.style.visibility = "hidden";
+        SOURCE.connect(ANALYSER);
+        DATA = new Uint8Array(ANALYSER.frequencyBinCount);
+        LEN = DATA.length;
+        h = H / LEN;
+        x = W - 1;
+
+        loop();
+
+      } catch(e) {
+        console.log("Audio not loaded!");
+      }
+
 
       function loop() {
         if (auto_color_change) {
