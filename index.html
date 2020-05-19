@@ -86,7 +86,6 @@
   var playback_speed = 1;
 
   var CVS;
-  var CTX;
   var anim_loop = null;
 
   var h1;
@@ -237,7 +236,7 @@
 
     h1.remove();
     CVS = document.body.querySelector('canvas');
-    CTX = CVS.getContext('2d');
+    var CTX = CVS.getContext('2d');
     const W = CVS.width = 1366;
     const H = CVS.height = 768;
 
