@@ -5,77 +5,18 @@
   <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=no">
   <title>Audio Visualizer</title>
   <script src="custom_bezier.js" type="text/javascript"></script>
-  <style type="text/css">
-  /* latin */
-  * {
-    -webkit-user-select: none;
-    user-select: none;
-    -moz-user-select: none;
-  }
-  @font-face {
-    font-family: 'Caveat';
-    font-style: normal;
-    font-weight: 700;
-    font-display: swap;
-    src: local('Caveat Bold'), local('Caveat-Bold'), url(https://fonts.gstatic.com/s/caveat/v7/Wnz5HAc5bAfYB2Qz3RMNpS7RFgihjQ.woff2) format('woff2');
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-  }
-  html,
-  body {
-    height: 100%;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background-color: rgb(0, 0, 0);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  canvas {
-    height: 100%;
-    width: 100%;
-    background-color: transparent;
-    min-width: 768px;
-
-  }
-
-  #welcome-message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, 0);
-    margin: 0;
-    text-align: center;
-    color: white;
-    font-family: 'Caveat';
-  }
-
-  #warning-message {
-    display: none;
-    color: white;
-    font-family: 'Caveat';
-    font-size: 5vh;
-    text-align: center;
-  }
-  @media only screen and (orientation:portrait){
-    canvas, #welcome-message { display:none; }
-    #warning-message { display:block; }
-  }
-  @media only screen and (orientation:landscape){
-    #warning-message { display:none; }
-  }
-
-  </style>
+  <link rel="stylesheet" type="text/css" href="style.css">
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
 </head>
 
 <body>
   <div id="warning-message">Visualizer is only viewable in Landscape Mode!</div>
   <h1 id="welcome-message">Click to Visualize</h1>
+  <div id="page-loader"></div>
   <canvas></canvas>
   <script type="text/javascript">
+
+  var loader = document.getElementById("page-loader");
 
   var config;
 
@@ -138,6 +79,7 @@
 
     document.body.querySelector('h1').remove();
     setupDatGui();
+    loader.style.visibility = "visible";
     aud.oncanplaythrough = function() {
           aud.play();
           initialize();
@@ -226,6 +168,7 @@
     CVS.remove();
     var canvas = document.createElement("canvas");
     document.body.appendChild(canvas);
+    loader.style.visibility = "visible";
     aud.oncanplaythrough = function() {
           aud.play();
           initialize();
@@ -233,7 +176,7 @@
   }
 
   function initialize() {
-
+    loader.style.visibility = "hidden";
     h1.remove();
     CVS = document.body.querySelector('canvas');
     var CTX = CVS.getContext('2d');
