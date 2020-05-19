@@ -4,6 +4,7 @@
 <head>
   <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=no">
   <title>Audio Visualizer</title>
+  <script src="custom_bezier.js" type="text/javascript"></script>
   <style type="text/css">
   /* latin */
   * {
@@ -85,6 +86,7 @@
   var playback_speed = 1;
 
   var CVS;
+  var CTX;
   var anim_loop = null;
 
   var h1;
@@ -106,6 +108,8 @@
   var fade = 65;
   var visualizer_cursor = false;
   var bg_visualizer = false;
+  var bezier = false;
+  var bezier_color = "rgba(235, 149, 50, 1)";
 
   var mouseX = null;
   var mouseY = null;
@@ -158,6 +162,8 @@
     this.playback_speed = playback_speed;
     this.visualizer_cursor = visualizer_cursor;
     this.bg_visualizer = bg_visualizer;
+    this.bezier = bezier;
+    this.bezier_color = bezier_color;
   };
 
   function setupDatGui() {
@@ -180,6 +186,8 @@
     gui.add(config, 'playback_speed', 0.25, 4).onChange(setValue);
     gui.add(config, 'visualizer_cursor').onChange(setValue);
     gui.add(config, 'bg_visualizer').onChange(setValue);
+    gui.add(config, 'bezier').onChange(setValue);
+    gui.addColor(config, 'bezier_color').onChange(setValue);
   }
 
   function setValue() {
@@ -206,6 +214,8 @@
         CVS.style.cursor = "default";
     }
     bg_visualizer = config.bg_visualizer;
+    bezier = config.bezier;
+    bezier_color = config.bezier_color;
   }
 
   function initializeNewSource() {
@@ -227,7 +237,7 @@
 
     h1.remove();
     CVS = document.body.querySelector('canvas');
-    const CTX = CVS.getContext('2d');
+    CTX = CVS.getContext('2d');
     const W = CVS.width = 1366;
     const H = CVS.height = 768;
 
@@ -363,6 +373,7 @@
             var y = H - loc / curve_height_factor - 60;
 
             CTX.lineTo((W / 2) - (LEN) / 2 + i + bar_width / 2, y);
+
             // CTX.lineTo((W / 2) - (LEN / 2) + i, H);
             // CTX.bezierCurveTo((W / 2) - (LEN) / 2 + i - bar_width / 2, H - loc - 10, (W / 2) - (LEN) / 2 + i + 1.5 * bar_width , H - loc - 10, (W / 2) - (LEN) / 2 + i + bar_width, H - loc - 10);
           }
@@ -371,6 +382,24 @@
           CTX.stroke();
           CTX.closePath();
         }
+
+
+        if (bezier) {
+          var bezier_control_points = [];
+          var control_width = parseInt(W / (24));
+          for (i = 0; i <= LEN; i += control_width) {
+            let rat = (DATA[i]) / bar_height_factor;
+            let loc = rat * H;
+
+            var y = H - loc / curve_height_factor - 60;
+            bezier_control_points.push((W / 2) - (LEN) / 2 + i + control_width / 2);
+            bezier_control_points.push(y);
+          }
+          CTX.bezier_color = bezier_color;
+          CTX.curve_thickness = curve_thickness;
+          CTX.bezier.apply(CTX, bezier_control_points);
+        }
+
 
         if (visualizer_cursor) {
           for (let i = 0; i < LEN; i += 2 * bar_width) {
